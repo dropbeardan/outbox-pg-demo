@@ -1,0 +1,27 @@
+FROM node:18.17 AS node-base
+RUN apt-get update
+RUN apt-get upgrade
+RUN apt-get install postgresql -y
+
+FROM node-base AS install-base
+WORKDIR /app
+ADD package.json yarn.lock /app
+RUN yarn install
+
+FROM install-base AS development
+ADD .env nodemon.json tsconfig.json /app
+ADD scripts /app/scripts
+ADD src /app/src
+CMD yarn start:dev
+
+FROM install-base AS build-base
+ADD .env tsconfig.json /app
+ADD src /app/src
+RUN yarn build
+
+FROM node-base AS release
+WORKDIR /app
+ADD .env package.json yarn.lock /app
+RUN yarn install --production
+COPY --from=build-base /app/dist /app/node_modules /app
+CMD yarn start

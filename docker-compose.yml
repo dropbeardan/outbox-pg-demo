@@ -1,0 +1,156 @@
+x-receiver-postgres-credentials: &receiver-pg-creds
+  POSTGRES_DB: receiver-app
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+
+x-sender-postgres-credentials: &sender-pg-creds
+  POSTGRES_DB: sender-app
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: password
+
+version: "3.1"
+services:
+  cp-broker:
+    image: confluentinc/cp-server:7.5.0
+    hostname: cp-broker
+    container_name: cp-broker
+    depends_on:
+      - cp-zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: cp-zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://cp-broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://cp-schema-registry:8081
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: cp-broker:29092
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: "true"
+      CONFLUENT_SUPPORT_CUSTOMER_ID: "anonymous"
+    volumes:
+      - ./local/cp-broker/data:/var/lib/kafka/data
+
+  cp-control-center:
+    image: confluentinc/cp-enterprise-control-center:7.5.0
+    hostname: cp-control-center
+    container_name: cp-control-center
+    depends_on:
+      - cp-broker
+      - cp-schema-registry
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: cp-broker:29092
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: http://cp-schema-registry:8081
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      PORT: 9021
+
+  cp-schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    hostname: cp-schema-registry
+    container_name: cp-schema-registry
+    depends_on:
+      - cp-broker
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: cp-schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: cp-broker:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+  cp-zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    hostname: cp-zookeeper
+    container_name: cp-zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - ./local/cp-zookeeper/data:/var/lib/zookeeper/data
+      - ./local/cp-zookeeper/log:/var/lib/zookeeper/log
+
+  receiver-app:
+    container_name: receiver-app
+    hostname: receiver-app
+    build:
+      context: ./workspaces/receiver
+      target: development
+    depends_on:
+      - receiver-postgres-db
+    environment:
+      <<: *receiver-pg-creds
+      APP_PORT: 25101
+      KAFKA_BROKER_URI: cp-broker:29092
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 25100
+    expose:
+      - 25101
+    ports:
+      - "25101:25101"
+    volumes:
+      - ./workspaces/receiver/src:/app/src
+
+  receiver-postgres-db:
+    container_name: receiver-postgres-db
+    hostname: receiver-postgres-db
+    image: postgres
+    environment:
+      <<: *receiver-pg-creds
+    expose:
+      - 25100
+    ports:
+      - 25100:5432
+    restart: always
+    volumes:
+      - ./local/receiver-postgres-db/data:/var/lib/postgresql/data
+
+  sender-app:
+    container_name: sender-app
+    hostname: sender-app
+    build:
+      context: ./workspaces/sender
+      target: development
+    depends_on:
+      - sender-postgres-db
+    environment:
+      <<: *sender-pg-creds
+      APP_PORT: 25201
+      KAFKA_BROKER_URI: cp-broker:29092
+      POSTGRES_HOST: host.docker.internal
+      POSTGRES_PORT: 25200
+    expose:
+      - 25201
+    ports:
+      - "25201:25201"
+    volumes:
+      - ./workspaces/sender/src:/app/src
+
+  sender-postgres-db:
+    container_name: sender-postgres-db
+    hostname: sender-postgres-db
+    image: postgres
+    environment:
+      <<: *sender-pg-creds
+    expose:
+      - 25200
+    ports:
+      - 25200:5432
+    restart: always
+    volumes:
+      - ./local/sender-postgres-db/data:/var/lib/postgresql/data

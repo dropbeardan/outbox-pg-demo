@@ -1,0 +1,8 @@
+# LOCAL
+local
+
+# BUILD
+dist
+
+# LIBRARIES
+node_modules

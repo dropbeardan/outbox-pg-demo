@@ -1,0 +1,7 @@
+{
+  "ignore": ["*.test.ts", "*.test.js"],
+  "execMap": {
+    "ts": "ts-node"
+  },
+  "watch": ["src"]
+}

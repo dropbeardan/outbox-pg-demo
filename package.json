@@ -1,0 +1,26 @@
+{
+  "name": "outbox-pg-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:dropbeardan/outbox-pg-demo.git",
+  "author": "dropbeardan <daniel.sutisna@shippit.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "bootstrap": "yarn bootstrap:husky",
+    "bootstrap:husky": "npx husky install"
+  },
+  "lint-staged": {
+    "**/*": [
+      "prettier --write --ignore-unknown"
+    ]
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^14.0.1",
+    "prettier": "^3.0.2"
+  },
+  "workspaces": [
+    "workspaces/*"
+  ]
+}
