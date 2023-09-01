@@ -5,9 +5,6 @@ import { useEffect, useState } from "react";
 
 import ServicePanel from "./ServicePanel";
 
-const RECEIVER_ENDPOINT_HOST = "http://localhost:25101";
-const SENDER_ENDPOINT_HOST = "http://localhost:25201";
-
 export default function App() {
   const [isReceiverBusy, setIsReceiverBusy] = useState(false);
   const [isSenderBusy, setIsSenderBusy] = useState(false);
@@ -60,7 +57,7 @@ export default function App() {
     setIsSenderBusy(true);
 
     await axios.post(
-      `${SENDER_ENDPOINT_HOST}/messages`,
+      `${import.meta.env.VITE_SENDER_ENDPOINT_HOST}/messages`,
       {
         message,
         user: "Sender",
@@ -82,7 +79,7 @@ export default function App() {
 
     setIsReceiverBusy(true);
 
-    await axios.delete(`${RECEIVER_ENDPOINT_HOST}/messages`, {
+    await axios.delete(`${import.meta.env.VITE_RECEIVER_ENDPOINT_HOST}/messages`, {
       validateStatus: () => true,
     });
 
@@ -98,7 +95,7 @@ export default function App() {
 
     setIsSenderBusy(true);
 
-    await axios.delete(`${SENDER_ENDPOINT_HOST}/messages`, {
+    await axios.delete(`${import.meta.env.VITE_SENDER_ENDPOINT_HOST}/messages`, {
       validateStatus: () => true,
     });
 
@@ -114,7 +111,7 @@ export default function App() {
 
     setIsReceiverBusy(true);
 
-    const response = await axios.get(`${RECEIVER_ENDPOINT_HOST}/messages`, {
+    const response = await axios.get(`${import.meta.env.VITE_RECEIVER_ENDPOINT_HOST}/messages`, {
       validateStatus: () => true,
     });
     setReceiverMessages(response.data.messages);
@@ -129,7 +126,7 @@ export default function App() {
 
     setIsSenderBusy(true);
 
-    const response = await axios.get(`${SENDER_ENDPOINT_HOST}/messages`, {
+    const response = await axios.get(`${import.meta.env.VITE_SENDER_ENDPOINT_HOST}/messages`, {
       validateStatus: () => true,
     });
     setSenderMessages(response.data.messages);

@@ -154,3 +154,20 @@ services:
     restart: always
     volumes:
       - ./local/sender-postgres-db/data:/var/lib/postgresql/data
+
+  ui:
+    container_name: ui
+    hostname: ui
+    build:
+      context: ./workspaces/ui
+      target: development
+    environment:
+      APP_PORT: 25300
+      VITE_RECEIVER_ENDPOINT_HOST: http://localhost:25101
+      VITE_SENDER_ENDPOINT_HOST: http://localhost:25201
+    expose:
+      - 25300
+    ports:
+      - 25300:25300
+    volumes:
+      - ./workspaces/ui/src:/app/src
