@@ -1,7 +1,8 @@
-import { getKafkaProducer } from "@/kafka";
-
 import { MessageEntity } from "@/app/messages/domain/message.entity";
 import { messageRepository } from "@/app/messages/domain/message.repository";
+import { OutboxEventEntity } from "@/app/outbox-events/domain/outbox-event.entity";
+
+import { dataSource } from "@/typeorm/data-source";
 
 export const createNewMessage = async (params: {
   createdAt?: Date;
@@ -10,15 +11,14 @@ export const createNewMessage = async (params: {
   updatedAt?: Date;
   user: string;
 }) => {
-  const message = MessageEntity.create(params);
+  const createdMessage = await dataSource.transaction(async (txEntityManager) => {
+    const message = MessageEntity.create(params);
 
-  await messageRepository.save(message);
+    await txEntityManager.save(message);
 
-  const kafkaProducer = await getKafkaProducer();
-  await kafkaProducer.send({
-    topic: "message-stream-topic",
-    messages: [
-      {
+    const outboxEvent = OutboxEventEntity.create({
+      topic: "message-stream-topic",
+      payload: {
         key: message.id,
         value: JSON.stringify({
           type: "message-created",
@@ -31,26 +31,31 @@ export const createNewMessage = async (params: {
           },
         }),
       },
-    ],
+    });
+
+    await txEntityManager.save(outboxEvent);
+
+    return message;
   });
 
-  return message;
+  return createdMessage;
 };
 
 export const deleteMessages = async () => {
-  await messageRepository.delete({});
+  await dataSource.transaction(async (txEntityManager) => {
+    await messageRepository.delete({});
 
-  const kafkaProducer = await getKafkaProducer();
-  await kafkaProducer.send({
-    topic: "message-stream-topic",
-    messages: [
-      {
+    const outboxEvent = OutboxEventEntity.create({
+      topic: "message-stream-topic",
+      payload: {
         key: "messages-deleted",
         value: JSON.stringify({
           type: "messages-deleted",
         }),
       },
-    ],
+    });
+
+    await txEntityManager.save(outboxEvent);
   });
 };
 
