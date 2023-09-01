@@ -1,13 +1,18 @@
 import axios from "axios";
+import Button from "@mui/material/Button";
 import Grid from "@mui/material/Grid";
 import Typography from "@mui/material/Typography";
 import { useEffect, useState } from "react";
 
+import OutboxModal from "./OutboxModal";
 import ServicePanel from "./ServicePanel";
 
 export default function App() {
+  const [isOutboxModalBusy, setIsOutboxModalBusy] = useState(false);
+  const [isOutboxModalOpen, setIsOutboxModalOpen] = useState(false);
   const [isReceiverBusy, setIsReceiverBusy] = useState(false);
   const [isSenderBusy, setIsSenderBusy] = useState(false);
+  const [outboxEvents, setOutboxEvents] = useState([]);
   const [receiverMessages, setReceiverMessages] = useState([]);
   const [senderMessages, setSenderMessages] = useState([]);
 
@@ -17,10 +22,23 @@ export default function App() {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
+      <OutboxModal
+        events={outboxEvents}
+        isLoading={isOutboxModalBusy}
+        isOpen={isOutboxModalOpen}
+        onClose={onCloseOutboxModal}
+      />
+
+      <Grid item xs={8}>
         <Typography textAlign="center" variant="h4">
           Outbox PG Demo
         </Typography>
+      </Grid>
+
+      <Grid item xs={4}>
+        <Button variant="outlined" onClick={onOpenOutboxModal}>
+          View Outbox Events
+        </Button>
       </Grid>
 
       <Grid item xs={6}>
@@ -48,6 +66,10 @@ export default function App() {
       </Grid>
     </Grid>
   );
+
+  async function onCloseOutboxModal() {
+    setIsOutboxModalOpen(false);
+  }
 
   async function onCreateMessage(message: string) {
     if (isSenderBusy) {
@@ -104,6 +126,23 @@ export default function App() {
     await onReloadMessages();
   }
 
+  async function onLoadOutboxEvents() {
+    if (isOutboxModalBusy) {
+      return;
+    }
+
+    setIsOutboxModalBusy(true);
+
+    console.log("fetching");
+
+    const response = await axios.get(`${import.meta.env.VITE_SENDER_ENDPOINT_HOST}/outbox-events`, {
+      validateStatus: () => true,
+    });
+    setOutboxEvents(response.data.events);
+
+    setIsOutboxModalBusy(false);
+  }
+
   async function onLoadReceiverMessages() {
     if (isReceiverBusy) {
       return;
@@ -132,6 +171,11 @@ export default function App() {
     setSenderMessages(response.data.messages);
 
     setIsSenderBusy(false);
+  }
+
+  async function onOpenOutboxModal() {
+    setIsOutboxModalOpen(true);
+    onLoadOutboxEvents();
   }
 
   async function onReloadMessages() {
