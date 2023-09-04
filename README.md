@@ -39,3 +39,48 @@ If you are updating infra / ecosystem code, you might want to rebuild your conta
 ```
 docker-compose up -d --build
 ```
+
+## Setting Up CDC Demo
+
+### Creating Publication
+
+Connect to the `sender-app` DB:
+
+```
+psql -U postgres -d sender-app
+```
+
+Run the following command:
+
+```
+CREATE PUBLICATION debezium_publications FOR TABLE outbox_events;
+```
+
+### Creating Connectors
+
+```
+POST localhost:8083/connectors
+
+BODY:
+{
+  "name": "outbox-events-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.dbname": "sender-app",
+    "database.hostname": "host.docker.internal",
+    "database.password": "password",
+    "database.port": "25200",
+    "database.user": "postgres",
+    "plugin.name": "pgoutput",
+    "publication.autocreate.mode": "disabled",
+    "publication.name": "debezium_publications",
+    "schema.registry.url": "http://localhost:8081",
+    "slot.drop.on.stop": false,
+    "slot.name": "debezium",
+    "table.include.list": "public\\.outbox_events",
+    "tasks.max": "1",
+    "tombstones.on.delete": false,
+    "topic.prefix": "pg-connector"
+  }
+}
+```
