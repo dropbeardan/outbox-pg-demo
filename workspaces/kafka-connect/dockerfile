@@ -1,0 +1,6 @@
+FROM confluentinc/cp-server-connect:7.5.0
+USER root
+RUN mkdir /plugins
+RUN chown appuser /plugins
+USER appuser
+RUN confluent-hub install --component-dir /plugins --no-prompt debezium/debezium-connector-postgresql:2.2.1
