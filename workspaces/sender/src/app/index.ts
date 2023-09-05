@@ -1,11 +1,12 @@
 import cors from "cors";
 import express, { Express } from "express";
-import cron from "node-cron";
 
 import healthzRoutes from "@/app/healthz/api.handler";
 import messagesRoutes from "@/app/messages/api.handler";
 import outboxEventsRoutes from "@/app/outbox-events/api.handler";
-import { processOutboxEventsController } from "@/app/outbox-events/scheduler.handler";
+import outboxEventsEventRoutes from "@/app/outbox-events/events.handler";
+
+import { getKafkaConsumer } from "@/kafka";
 
 export const createApp = () => {
   const app = express();
@@ -26,6 +27,14 @@ export const startApp = (app: Express, port: number) => {
   });
 };
 
-export const startScheduler = () => {
-  cron.schedule("*/10 * * * * *", processOutboxEventsController);
+export const subscribeToKafkaEvents = async () => {
+  const consumer = await getKafkaConsumer("sender");
+
+  await consumer.subscribe({
+    topics: ["outbox.event.message-events"],
+  });
+
+  consumer.run({
+    eachMessage: outboxEventsEventRoutes,
+  });
 };

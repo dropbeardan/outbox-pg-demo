@@ -1,3 +1,5 @@
+import { v4 as uuidV4 } from "uuid";
+
 import { MessageEntity } from "@/app/messages/domain/message.entity";
 import { messageRepository } from "@/app/messages/domain/message.repository";
 import { OutboxEventEntity } from "@/app/outbox-events/domain/outbox-event.entity";
@@ -16,20 +18,22 @@ export const createNewMessage = async (params: {
 
     await txEntityManager.save(message);
 
+    const eventId = uuidV4();
+
     const outboxEvent = OutboxEventEntity.create({
-      topic: "message-stream-topic",
+      aggregateId: message.id,
+      aggregateType: "message-events",
+      id: eventId,
       payload: {
-        key: message.id,
-        value: JSON.stringify({
-          type: "message-created",
-          payload: {
-            createdAt: message.createdAt,
-            id: message.id,
-            message: message.message,
-            updatedAt: message.updatedAt,
-            user: message.user,
-          },
-        }),
+        eventId,
+        type: "message-created",
+        payload: {
+          createdAt: message.createdAt,
+          id: message.id,
+          message: message.message,
+          updatedAt: message.updatedAt,
+          user: message.user,
+        },
       },
     });
 
@@ -45,13 +49,15 @@ export const deleteMessages = async () => {
   await dataSource.transaction(async (txEntityManager) => {
     await messageRepository.delete({});
 
+    const eventId = uuidV4();
+
     const outboxEvent = OutboxEventEntity.create({
-      topic: "message-stream-topic",
+      aggregateId: "messages-deleted",
+      aggregateType: "message-events",
+      id: eventId,
       payload: {
-        key: "messages-deleted",
-        value: JSON.stringify({
-          type: "messages-deleted",
-        }),
+        eventId,
+        type: "messages-deleted",
       },
     });
 

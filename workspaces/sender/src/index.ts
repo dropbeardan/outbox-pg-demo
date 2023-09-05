@@ -1,7 +1,7 @@
 import "dotenv/config";
 import process from "node:process";
 
-import { createApp, startApp, startScheduler } from "@/app";
+import { createApp, startApp, subscribeToKafkaEvents } from "@/app";
 import { createKafkaInstance } from "@/kafka";
 import { createPostgresConnection } from "@/typeorm";
 
@@ -12,7 +12,8 @@ const init = async () => {
   const app = createApp();
 
   startApp(app, Number(process.env.APP_PORT));
-  startScheduler();
+
+  await subscribeToKafkaEvents();
 };
 
 init();
