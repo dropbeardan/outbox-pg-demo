@@ -65,6 +65,7 @@ BODY:
 {
   "name": "outbox-events-connector",
   "config": {
+    "confluent.topic.replication.factor": 1,
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "database.dbname": "sender-app",
     "database.hostname": "host.docker.internal",
@@ -80,7 +81,13 @@ BODY:
     "table.include.list": "public\\.outbox_events",
     "tasks.max": "1",
     "tombstones.on.delete": false,
-    "topic.prefix": "pg-connector"
+    "topic.creation.default.replication.factor": 1,
+    "topic.creation.default.partitions": 1,
+    "transforms": "outbox",
+    "transforms.outbox.table.expand.json.payload": true,
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "topic.prefix": "pg-connector",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter"
   }
 }
 ```

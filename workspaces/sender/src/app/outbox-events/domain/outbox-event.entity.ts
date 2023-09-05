@@ -8,6 +8,12 @@ import {
 
 @Entity("outbox_events")
 export class OutboxEventEntity {
+  @Column({ name: "aggregateid", type: "text" })
+  aggregateId: string;
+
+  @Column({ name: "aggregatetype", type: "text" })
+  aggregateType: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -15,27 +21,26 @@ export class OutboxEventEntity {
   id: string;
 
   @Column({ type: "jsonb" })
-  payload: string;
-
-  @Column({ type: "text" })
-  topic: string;
+  payload: Record<string, unknown>;
 
   @UpdateDateColumn()
   updatedAt: Date;
 
   static create(params: {
+    aggregateId: string;
+    aggregateType: string;
     createdAt?: Date;
     id?: string;
     payload: Record<string, unknown>;
-    topic: string;
     updatedAt?: Date;
   }) {
     const outboxEvent = new OutboxEventEntity();
 
+    outboxEvent.aggregateId = params.aggregateId;
+    outboxEvent.aggregateType = params.aggregateType;
     outboxEvent.createdAt = params.createdAt;
     outboxEvent.id = params.id;
-    outboxEvent.payload = JSON.stringify(params.payload);
-    outboxEvent.topic = params.topic;
+    outboxEvent.payload = params.payload;
     outboxEvent.updatedAt = params.updatedAt;
 
     return outboxEvent;
