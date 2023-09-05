@@ -26,10 +26,10 @@ export const startApp = (app: Express, port: number) => {
 };
 
 export const subscribeToKafkaEvents = async () => {
-  const consumer = await getKafkaConsumer("default");
+  const consumer = await getKafkaConsumer("receiver");
 
   await consumer.subscribe({
-    topics: ["message-stream-topic"],
+    topics: ["outbox.event.message-events"],
   });
 
   consumer.run({

@@ -3,23 +3,27 @@ import { EachMessagePayload, Message } from "kafkajs";
 import { createNewMessage, deleteMessages } from "@/app/messages/domain";
 
 type MessageSchema = {
-  type: string;
+  schema: Record<string, unknown>;
   payload: {
-    createdAt: string;
-    id: string;
-    message: string;
-    updatedAt: string;
-    user: string;
+    eventId: string;
+    type: string;
+    payload: {
+      createdAt: string;
+      id: string;
+      message: string;
+      updatedAt: string;
+      user: string;
+    };
   };
 };
 
 const createMessageController = async (message: MessageSchema) => {
   await createNewMessage({
-    createdAt: new Date(message.payload.createdAt),
-    id: message.payload.id,
-    message: message.payload.message,
-    updatedAt: new Date(message.payload.updatedAt),
-    user: message.payload.user,
+    createdAt: new Date(message.payload.payload.createdAt),
+    id: message.payload.payload.id,
+    message: message.payload.payload.message,
+    updatedAt: new Date(message.payload.payload.updatedAt),
+    user: message.payload.payload.user,
   });
 };
 
@@ -34,12 +38,14 @@ const eventRouter = async (payload: EachMessagePayload) => {
 
   const message: MessageSchema = JSON.parse(rawMessageString);
 
-  if (message?.type === "message-created") {
+  console.log("Parsed message", message);
+
+  if (message.payload.type === "message-created") {
     await createMessageController(message);
     return;
   }
 
-  if (message?.type === "messages-deleted") {
+  if (message.payload.type === "messages-deleted") {
     await deleteMessages();
     return;
   }
