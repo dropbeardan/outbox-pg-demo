@@ -18,6 +18,8 @@ This will create a fully functioning network of services.
 
 - Receiver App: localhost:25101
 - Sender App: localhost:25201
+- CP Control Center: localhost:9021
+- UI: localhost:25300
 
 # Contribution Guide
 
